@@ -39,25 +39,20 @@
   #stage canvas{position:absolute;inset:0;height:100%;border-radius:0}
   #modelHelp{display:none;position:absolute;left:10px;top:10px;right:10px;padding:8px 10px;border-radius:9px;
              background:rgba(255,255,255,.92);border:1px solid var(--line);font-size:12px}
+  #tab{margin-top:0}
+  #tab button{padding:8px 2px}
+  .panel{display:none;margin-top:10px}
+  .panel.on{display:block}
   #pitch{height:170px;background:#fffafb;border:1px solid var(--line)}
-  #graph{height:220px;background:#fffafb;border:1px solid var(--line)}
+  #graph{height:260px;background:#fffafb;border:1px solid var(--line)}
   .note{color:var(--sub);font-size:12px;margin:6px 0 0}
-  .read{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
-  .read div{background:var(--bg);border-radius:10px;padding:8px 10px}
-  .read span{display:block;font-size:12px;color:var(--sub)}
-  .read b{font-size:22px;font-variant-numeric:tabular-nums}
-  .read .small b{font-size:16px}
-  #formula{margin-top:8px;padding:8px 10px;background:#fff3e6;border-radius:10px;font-variant-numeric:tabular-nums}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:1100px){.two{grid-template-columns:1fr}}
   table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
   th,td{border:1px solid var(--line);padding:6px 8px;text-align:center}
   th{background:var(--bg);font-weight:700}
   td small{display:block;color:var(--sub);font-size:11px}
   td.empty{color:#d3bfc7}
   .up{color:var(--src)} .down{color:var(--obs)}
-  .cmp input,.cmp select,.song input[type=url]{padding:4px 6px;border:1px solid var(--line);border-radius:5px;font:inherit}
-  .cmp input{width:100px;text-align:right}
+  .song input[type=url]{padding:4px 6px;border:1px solid var(--line);border-radius:5px;font:inherit}
   .song input[type=file]{width:100%;font:inherit;font-size:12px}
   .song .link{display:flex;gap:4px;margin-top:6px}
   .song .link input{flex:1;min-width:0}
@@ -73,7 +68,7 @@
 <body>
 <header>
   <h1>도플러 효과 시뮬레이션 🚗🎵</h1>
-  <p>음원이 노래를 틀고 도로를 달립니다. 길옆의 관찰자에게 들리는 소리의 진동수 f′, 높낮이, 파형이 어떻게 달라지는지 탐구해 봅시다.</p>
+  <p>음원이 노래를 틀고 도로를 달립니다. 길옆의 관찰자에게 들리는 소리의 진동수, 높낮이, 파형이 어떻게 달라지는지 탐구해 봅시다.</p>
 </header>
 
 <main>
@@ -82,6 +77,13 @@
     <div class="card">
       <h2>조작 변수</h2>
       <div class="row">
+        <label>음원 진동수 나타내기</label>
+        <div class="seg" id="fmode">
+          <button data-v="fixed">고정 진동수</button><button data-v="live">실시간 인식</button>
+        </div>
+        <p class="note" id="modeNote"></p>
+      </div>
+      <div class="row" id="fRow">
         <label>음원 진동수 f (Hz) <input type="number" id="fN" min="200" max="2000" step="1"></label>
         <input type="range" id="fR" min="200" max="2000" step="10">
       </div>
@@ -144,17 +146,20 @@
         <button data-v="song">🎵 노래</button><button data-v="tone">순음 (f Hz)</button>
       </div>
       <p class="note" id="songInfo"></p>
-      <div class="row" style="margin-top:8px">
-        <label>음원·영상 파일 첨부</label>
-        <input type="file" id="songFile" accept="audio/*,video/*">
-        <div class="link">
-          <input type="url" id="songUrl" placeholder="노래 링크 (mp3·mp4 주소, YouTube)">
-          <button class="chip" id="songGo">적용</button>
+      <div id="songExtra">
+        <div class="row" style="margin-top:8px">
+          <label>음원·영상 파일 첨부</label>
+          <input type="file" id="songFile" accept="audio/*,video/*">
+          <div class="link">
+            <input type="url" id="songUrl" placeholder="노래 링크 (mp3·mp4 주소, YouTube)">
+            <button class="chip" id="songGo">적용</button>
+          </div>
+          <button class="chip" id="songDef" style="margin-top:6px">기본 멜로디로</button>
+          <div id="ytBox"><div id="ytP"></div></div>
         </div>
-        <button class="chip" id="songDef" style="margin-top:6px">기본 멜로디로</button>
-        <div id="ytBox"><div id="ytP"></div></div>
+        <p class="note">노래에는 여러 진동수가 섞여 있지만, 모든 성분이 같은 비율로 변해서 노래 전체가 높아지거나 낮아집니다.</p>
       </div>
-      <p class="note">노래에는 여러 진동수가 섞여 있지만, 모든 성분이 같은 비율 f′/f로 변해서 노래 전체가 높아지거나 낮아집니다. 소리의 크기는 거리가 가까울수록 커집니다.</p>
+      <p class="note">소리의 크기는 거리가 가까울수록 커집니다.</p>
     </div>
 
     <div class="card">
@@ -163,69 +168,37 @@
     </div>
   </aside>
 
-  <!-- ───────── 관찰 결과 ───────── -->
+  <!-- ───────── 시뮬레이션 + 관찰 결과 ───────── -->
   <section>
     <div class="card">
       <h2>음원과 관찰자의 운동 <span id="stateTxt" style="float:right;font-weight:700"></span></h2>
       <div id="stage">
         <canvas id="gl"></canvas>
         <canvas id="wave"></canvas>
-        <div id="modelHelp">3D 모델을 불러오지 못했습니다(파일을 더블클릭으로 열면 브라우저가 막습니다).
-          <b>chiikawa_car.glb</b>와 <b>usagi.glb</b>를 이 그림 위로 끌어다 놓거나 선택하세요.
+        <div id="modelHelp">3D 모델을 불러오지 못했습니다(인터넷 연결을 확인하세요).
+          <b>chiikawa_car.glb</b>와 <b>usagi.glb</b>를 이 그림 위로 끌어다 놓거나 선택해도 됩니다.
           <input type="file" id="modelFile" accept=".glb" multiple></div>
       </div>
       <p class="note" id="waveNote"></p>
     </div>
 
     <div class="card">
-      <h2>소리의 높낮이와 파형</h2>
-      <canvas id="pitch"></canvas>
-      <p class="note">가까워질 때는 같은 시간 동안 더 많이 진동하므로(파형이 촘촘) 높은 소리로, 멀어질 때는 덜 진동하므로(파형이 느슨) 낮은 소리로 들립니다.</p>
-    </div>
-
-    <div class="card">
-      <h2>관찰 결과(현재 순간)</h2>
-      <div class="read">
-        <div><span>원래 진동수 f</span><b id="rF"></b></div>
-        <div><span>관찰 진동수 f′</span><b id="rFp"></b></div>
-        <div><span>차잇값 Δf = f′ − f</span><b id="rDf"></b></div>
-        <div><span>비율 f′ / f</span><b id="rRatio"></b></div>
-        <div class="small"><span>관찰자 쪽 파면 간격 λ′</span><b id="rLam"></b></div>
-        <div class="small"><span>음원(소리를 낸 위치)까지 거리</span><b id="rDist"></b></div>
+      <div class="seg" id="tab">
+        <button data-v="pitch">소리의 높낮이와 파형</button><button data-v="graph">시간–진동수 그래프</button><button data-v="table">결과표</button>
       </div>
-      <div id="formula"></div>
-    </div>
-
-    <div class="two">
-      <div class="card">
-        <h2>시간–진동수 그래프</h2>
+      <div class="panel" id="p-pitch">
+        <canvas id="pitch"></canvas>
+        <p class="note">가까워질 때는 같은 시간 동안 더 많이 진동하므로(파형이 촘촘) 높은 소리로, 멀어질 때는 덜 진동하므로(파형이 느슨) 낮은 소리로 들립니다.</p>
+      </div>
+      <div class="panel" id="p-graph">
         <canvas id="graph"></canvas>
         <p class="note" id="graphNote"></p>
       </div>
-
-      <div>
-        <div class="card">
-          <h2>이론값 미리 보기(멀리서 정면으로 움직일 때)</h2>
-          <table>
-            <tr><th></th><th>가까워질 때</th><th>멀어질 때</th></tr>
-            <tr><th>f′ (Hz)</th><td id="pA"></td><td id="pR"></td></tr>
-            <tr><th>Δf (Hz)</th><td id="pAd"></td><td id="pRd"></td></tr>
-          </table>
-          <div class="cmp" style="margin-top:10px">
-            <b>내 측정값과 비교</b><br>
-            <select id="mCase"><option value="app">가까워질 때</option><option value="rec">멀어질 때</option></select>
-            측정값 <input type="number" id="mVal" step="0.1" placeholder="Hz"> Hz
-            <div id="mOut" class="note"></div>
-          </div>
-        </div>
+      <div class="panel" id="p-table">
+        <table id="tbl"></table>
+        <p class="note" id="tblNote"></p>
+        <button class="chip" id="clear" style="margin-top:6px">표 지우기</button>
       </div>
-    </div>
-
-    <div class="card">
-      <h2>결과표(재생하면 자동 기록)
-        <button class="chip" id="clear" style="float:right">표 지우기</button></h2>
-      <table id="tbl"></table>
-      <p class="note">각 칸: 측정값 f′ / 차잇값 Δf, 아래는 기록할 때의 조건입니다. 가까워질 때는 가장 높았던 f′, 멀어질 때는 가장 낮았던 f′를 기록합니다. 같은 속력으로 (가)와 (나)를 채워 비교해 보세요.</p>
     </div>
   </section>
 </main>
@@ -237,14 +210,25 @@ const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 // ── 상태 ──────────────────────────────────────────────
 const P = {f:1200, vs:40, vo:40, v:340};
 let target = 'src', dir = 'app', rate = 0.25;
+let fMode = 'fixed';     // fixed: 진동수 f 하나로 고정 | live: 음원이 지금 내는 음의 진동수를 실시간으로 표시
+let sndMode = 'song';    // song: 노래(멜로디) | tone: 순음
+let tab = 'pitch';       // 시뮬레이션 아래에 보이는 관찰 결과
 let t = 0, running = false, last = 0;
 const SCENE_W = 680;     // 그림(3D 장면)의 가로 길이. 장면 단위
 const OBS_Z = 70;        // 관찰자가 도로 뒤쪽으로 떨어진 거리(장면 단위)
 const SPK_Y = 40;        // 그림에서 스피커(파면 중심) 높이(장면 단위)
+const MEL = [523,659,784,659, 880,784,659,0, 698,880,1047,880, 784,659,587,0,
+             523,659,784,1047, 988,784,659,0, 698,784,880,698, 659,587,523,0];   // 기본 멜로디(Hz), 8분음표, 0 = 쉼표
+const MEL_LO = 523, MEL_HI = 1047;
 let VIEW, TEND, DOFF, CREST;   // 화면 가로가 나타내는 거리(m), 재생 시간(s), 도로–관찰자 거리(m), 파면을 몇 마루마다 그릴지
 let xs0, xo0, us, uo, tMeet;
 let beatS = 0, beatO = 0, songPos = 0, scroll = 0;   // 박자(음원/관찰자), 노래 진행, 파형 흐름
 const rec = {};          // 결과표 기록
+const hist = [];         // 실시간 인식: 시간에 따른 (음원 진동수, 관찰 진동수) 기록
+
+// 실시간 인식 + 멜로디일 때만 음원 진동수가 시간에 따라 변한다.
+const live = () => fMode === 'live' && sndMode === 'song';
+const srcF = () => live() ? MEL[Math.floor(songPos*4) % MEL.length] : P.f;
 
 // ── 물리 ──────────────────────────────────────────────
 function eff(){ return {vs: target !== 'obs' ? P.vs : 0, vo: target !== 'src' ? P.vo : 0}; }
@@ -259,7 +243,7 @@ function setup(){
   tMeet = dir === 'app' && vs + vo > 0 ? TEND/2 : Infinity;
   DOFF = OBS_Z*VIEW/SCENE_W;
   setCrest();
-  t = 0;
+  t = 0; hist.length = 0;
 }
 // 파면을 너무 촘촘하게 그리면 한 프레임에 파면 간격의 절반 넘게 움직여서, 바퀴가 거꾸로 도는 것처럼
 // 안쪽으로 모이는 듯 보인다. 한 프레임 이동이 간격의 1/6 이하가 되도록 그리는 간격을 넓힌다.
@@ -271,10 +255,11 @@ function stateAt(tt){
   const xs = xs0 + us*tt, xo = xo0 + uo*tt, dx = xo - xs, k = P.v*P.v - us*us;
   const tau = (dx*us + Math.sqrt(dx*dx*us*us + k*(dx*dx + DOFF*DOFF)))/k;   // 소리가 오는 데 걸린 시간
   const R = P.v*tau, cos = (dx + us*tau)/R;      // 소리를 낸 위치에서 관찰자까지 거리와 방향
-  const num = P.v - uo*cos, den = P.v - us*cos, fp = P.f*num/den;
-  return {xs, xo, R, cos, num, den, fp,
+  const fp = P.f*(P.v - uo*cos)/(P.v - us*cos);
+  return {xs, xo, R, fp, ratio: fp/P.f,
           st: us === 0 && uo === 0 ? 'still' : fp >= P.f ? 'app' : 'rec'};
 }
+// 멀리서 정면으로 가까워질 때 / 멀어질 때 들리는 진동수(그래프의 기준선)
 function theory(){
   const {vs, vo} = eff();
   return {app: P.f*(P.v + vo)/(P.v - vs), rec: P.f*(P.v - vo)/(P.v + vs)};
@@ -346,9 +331,11 @@ function drawWave(S){
 }
 
 // ── 높낮이 계기 + 파형 ────────────────────────────────
-function drawPitch(S){
+// fS: 음원이 지금 내는 진동수(쉼표면 0)
+function drawPitch(S, fS){
+  if (tab !== 'pitch') return;
   const [g, w, h] = fit($('pitch'));
-  const ratio = S.fp/P.f, col = tone(S.st);
+  const ratio = S.ratio, col = tone(S.st), lv = live();
   // 계기: 왼쪽 = 낮은 소리, 오른쪽 = 높은 소리
   const gx = 95, gy = 108, R = 62;
   const grad = g.createLinearGradient(gx - R, 0, gx + R, 0);
@@ -361,13 +348,14 @@ function drawPitch(S){
   g.fillStyle = '#4a3540'; g.beginPath(); g.arc(gx, gy, 5, 0, 2*Math.PI); g.fill();
   g.font = '11px sans-serif'; g.textAlign = 'center'; g.fillStyle = '#8a7480';
   g.fillText('낮은 소리', gx - R, gy + 22); g.fillText('높은 소리', gx + R, gy + 22);
-  g.fillText('소리의 높낮이', gx, 20);
-  g.font = 'bold 17px sans-serif'; g.fillStyle = col;
-  g.fillText('f′ = ' + ratio.toFixed(2) + ' f', gx, gy + 46);
+  g.fillText('원래 소리와 비교한 높낮이', gx, 20);
+  g.font = 'bold 15px sans-serif'; g.fillStyle = col;
+  g.fillText('원래 소리의 ' + ratio.toFixed(2) + '배', gx, gy + 46);
 
   // 파형: 같은 시간 동안의 진동을 위아래로 비교
-  const x0 = 200, x1 = w - 12, N = 6;
+  const x0 = 200, x1 = w - 12;
   if (x1 - x0 < 80) return;
+  const N = lv ? 6*fS/800 : 6;                      // 실시간 인식: 음이 높을수록 음원의 파형도 촘촘
   const row = (y, cycles, c, label) => {
     g.font = '12px sans-serif'; g.textAlign = 'left'; g.fillStyle = c; g.fillText(label, x0, y - 26);
     g.strokeStyle = c; g.lineWidth = 2.2; g.lineCap = 'butt'; g.beginPath();
@@ -378,16 +366,26 @@ function drawPitch(S){
     g.stroke();
   };
   const word = ratio > 1.0005 ? '촘촘 → 높은 소리' : ratio < 0.9995 ? '느슨 → 낮은 소리' : '변화 없음';
-  row(52, N, '#8a7480', `음원이 낸 소리  f = ${P.f} Hz  (진동 ${N}번)`);
-  row(128, N*ratio, col, `관찰자가 듣는 소리  f′ = ${f1(S.fp)} Hz  (진동 ${(N*ratio).toFixed(1)}번 · ${word})`);
+  if (lv && !fS){
+    row(52, 0, '#8a7480', '음원이 지금 내는 소리  (쉼표)');
+    row(128, 0, col, '관찰자가 듣는 소리  (쉼표)');
+  } else if (lv){
+    row(52, N, '#8a7480', `음원이 지금 내는 소리  f = ${fS} Hz`);
+    row(128, N*ratio, col, `관찰자가 듣는 소리  f′ = ${(fS*ratio).toFixed(0)} Hz  (${word})`);
+  } else {
+    row(52, N, '#8a7480', `음원이 낸 소리  f = ${P.f} Hz  (진동 ${N}번)`);
+    row(128, N*ratio, col, `관찰자가 듣는 소리  f′ = ${f1(S.fp)} Hz  (진동 ${(N*ratio).toFixed(1)}번 · ${word})`);
+  }
 }
 
 // ── 시간–진동수 그래프 ────────────────────────────────
 function drawGraph(S){
+  if (tab !== 'graph') return;
   const [g, w, h] = fit($('graph'));
   const L = 62, R = 14, T = 14, B = 34, pw = w - L - R, ph = h - T - B;
-  const th = theory(), moving = us !== 0 || uo !== 0;
-  let lo = Math.min(P.f, th.rec), hi = Math.max(P.f, dir === 'app' ? th.app : P.f);
+  const th = theory(), moving = us !== 0 || uo !== 0, lv = live();
+  const ra = dir === 'app' ? th.app/P.f : 1, rr = th.rec/P.f;     // 가장 높아지는 비율, 가장 낮아지는 비율
+  let lo = (lv ? MEL_LO : P.f)*Math.min(1, rr), hi = (lv ? MEL_HI : P.f)*Math.max(1, ra);
   const span = Math.max(hi - lo, 4), pad = span*0.25; lo -= pad; hi += pad;
   const X = tt => L + tt/TEND*pw, Y = f => T + (hi - f)/(hi - lo)*ph;
   const dec = (hi - lo) < 50 ? 1 : 0;
@@ -405,6 +403,24 @@ function drawGraph(S){
   g.save(); g.translate(12, T + ph/2); g.rotate(-Math.PI/2); g.fillText('진동수 (Hz)', 0, -6); g.restore();
   g.strokeStyle = '#c9b3bd'; g.strokeRect(L, T, pw, ph);
 
+  if (lv){   // 실시간 인식: 음원이 내는 진동수(회색)와 관찰자가 듣는 진동수(분홍)를 함께 그림
+    const line = (key, col, lw) => {
+      g.strokeStyle = col; g.lineWidth = lw; g.beginPath();
+      let pen = false;
+      for (const p of hist){
+        if (!p.f){ pen = false; continue; }         // 쉼표에서는 선을 끊는다
+        pen ? g.lineTo(X(p.t), Y(p[key])) : g.moveTo(X(p.t), Y(p[key]));
+        pen = true;
+      }
+      g.stroke();
+    };
+    line('f', '#b39aa6', 1.5); line('fp', '#e8799b', 2.5);
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = '#b39aa6'; g.fillText('━ 음원이 내는 소리', L + 8, T + 6);
+    g.fillStyle = '#e8799b'; g.fillText('━ 관찰자가 듣는 소리', L + 8, T + 22);
+    return;
+  }
+
   // 기준선: 원래 진동수 f, 멀리서 정면으로 가까워질 때·멀어질 때의 값
   const ref = (f, col, text, below) => {
     g.setLineDash([6,4]); g.strokeStyle = col; g.lineWidth = 1;
@@ -412,7 +428,7 @@ function drawGraph(S){
     g.textAlign = 'right'; g.textBaseline = below ? 'top' : 'bottom'; g.fillStyle = col;
     g.fillText(text, w - R - 4, Y(f) + (below ? 3 : -2));
   };
-  ref(P.f, '#b39aa6', 'f = ' + P.f + ' Hz', false);
+  ref(P.f, '#b39aa6', '음원이 내는 소리 f = ' + P.f + ' Hz', false);
   if (moving){
     if (dir === 'app') ref(th.app, '#eba3b8', '멀리서 가까워질 때', false);
     ref(th.rec, '#9cc0ea', '멀리 멀어질 때', true);
@@ -429,45 +445,26 @@ function drawGraph(S){
   g.fillStyle = '#e8799b'; g.beginPath(); g.arc(X(t), Y(S.fp), 4.5, 0, 2*Math.PI); g.fill();
 }
 
-// ── 숫자·표 ───────────────────────────────────────────
-function drawReadouts(S){
-  const df = S.fp - P.f;
-  $('rF').textContent = P.f + ' Hz';
-  $('rFp').textContent = f1(S.fp) + ' Hz';
-  $('rDf').textContent = sg(df) + ' Hz'; $('rDf').className = cls(df);
-  $('rRatio').textContent = (S.fp/P.f).toFixed(4);
-  $('rLam').textContent = (S.den/P.f).toFixed(4) + ' m';
-  $('rDist').textContent = f1(S.R) + ' m';
-  const label = {app:'가까워지는 소리 → f′ > f (높은 소리)', rec:'멀어지는 소리 → f′ < f (낮은 소리)', still:'서로 정지 → f′ = f'}[S.st];
+// ── 설명 글 ───────────────────────────────────────────
+function drawNotes(S){
+  const label = {app:'가까워지는 소리 → 원래보다 높은 소리', rec:'멀어지는 소리 → 원래보다 낮은 소리', still:'서로 정지 → 원래 소리 그대로'}[S.st];
   $('stateTxt').textContent = label;
   $('stateTxt').style.color = tone(S.st);
 
-  const {vs, vo} = eff(), th = theory();
-  $('formula').innerHTML =
-    `<b>지금 f′ = ${f1(S.fp)} Hz</b> (f의 ${(S.fp/P.f).toFixed(3)}배)` +
-    `<br>멀리서 정면으로 가까워질 때: f′ = f × (v + vₒ) / (v − vₛ) = ${P.f} × (${P.v} + ${vo}) / (${P.v} − ${vs}) = ${f1(th.app)} Hz` +
-    `<br>멀리 멀어질 때: f′ = f × (v − vₒ) / (v + vₛ) = ${P.f} × (${P.v} − ${vo}) / (${P.v} + ${vs}) = ${f1(th.rec)} Hz` +
-    `<br><span class="note">진동수는 거리 자체가 아니라 '얼마나 빠르게 가까워지는가(멀어지는가)'로 정해집니다. ` +
-    `옆을 지나칠 때는 속도 중 관찰자 쪽을 향하는 성분이 줄어들어 f′가 두 값 사이에서 부드럽게 변합니다.</span>`;
-
-  $('pA').textContent = f1(th.app); $('pR').textContent = f1(th.rec);
-  $('pAd').textContent = sg(th.app - P.f); $('pAd').className = cls(th.app - P.f);
-  $('pRd').textContent = sg(th.rec - P.f); $('pRd').className = cls(th.rec - P.f);
-
-  const m = parseFloat($('mVal').value);
-  if (isFinite(m)){
-    const tv = th[$('mCase').value], e = m - tv;
-    $('mOut').innerHTML = `이론값 ${f1(tv)} Hz, 오차 ${sg(e)} Hz, 백분율 오차 ${(Math.abs(e)/tv*100).toFixed(2)} %` +
-      `<br>측정 차잇값 ${sg(m - P.f)} Hz, 이론 차잇값 ${sg(tv - P.f)} Hz`;
-  } else $('mOut').textContent = '스마트폰 앱으로 측정한 진동수를 넣으면 오차를 계산합니다.';
-
   $('waveNote').textContent =
-    `무지개색 원이 파면입니다(마루 ${CREST}개마다 하나씩 그림). 화면 가로는 ${Math.round(VIEW)} m이고 관찰자는 도로에서 ${f1(DOFF)} m 떨어져 있습니다. ` +
-    `시간은 ${rate}배로 흐르고, 캐릭터는 잘 보이도록 실제 축척보다 훨씬 크게 그렸습니다. 정지한 음원의 파장 λ = v/f = ${(P.v/P.f).toFixed(4)} m`;
-  $('graphNote').textContent = vs + vo === 0 ? '속력이 0이면 진동수가 변하지 않습니다.'
-    : dir === 'rec' ? '나란히 있다가 멀어집니다. f′는 f 근처에서 시작해 점점 낮아지다가, 충분히 멀어지면 \'멀리 멀어질 때\' 값에서 거의 일정해집니다.'
-    : `멀리 있을 때는 f′가 거의 일정하고, 서로 지나치는 t ≈ ${tMeet.toFixed(1)} s 부근에서 높은 값에서 낮은 값으로 부드럽게 바뀝니다(갑자기 뚝 떨어지지 않음).` +
+    `무지개색 원이 음원에서 퍼져 나가는 파면입니다. 화면 가로는 ${Math.round(VIEW)} m이고 관찰자는 도로에서 ${f1(DOFF)} m 떨어져 있습니다. ` +
+    `시간은 ${rate}배로 흐르고, 캐릭터는 잘 보이도록 실제 축척보다 훨씬 크게 그렸습니다.`;
+
+  const {vs, vo} = eff(), lv = live();
+  $('graphNote').textContent = lv
+    ? '회색 선은 음원이 내는 소리, 분홍 선은 관찰자가 듣는 소리의 진동수입니다. 가까워지는 동안에는 분홍 선이 회색 선보다 위에, 멀어지는 동안에는 아래에 있습니다. 멜로디의 모양은 그대로이고 전체가 높아지거나 낮아집니다.'
+    : vs + vo === 0 ? '속력이 0이면 진동수가 변하지 않습니다.'
+    : dir === 'rec' ? '나란히 있다가 멀어집니다. 들리는 진동수는 원래 진동수 근처에서 시작해 점점 낮아지다가, 충분히 멀어지면 거의 일정해집니다.'
+    : `멀리 있을 때는 들리는 진동수가 거의 일정하고, 서로 지나치는 t ≈ ${tMeet.toFixed(1)} s 부근에서 높은 값에서 낮은 값으로 부드럽게 바뀝니다(갑자기 뚝 떨어지지 않음).` +
       (TEND >= 12 ? ' 이 속력에서는 재생 시간 안에 화면 끝까지 가지 못해 변화가 작습니다.' : '');
+  $('tblNote').textContent = lv
+    ? '결과표는 음원 진동수가 일정할 때만 기록합니다. "고정 진동수"로 바꾸거나 순음을 선택한 뒤 재생하세요.'
+    : '각 칸: 들린 진동수 f′ / 원래 진동수와의 차이 Δf, 아래는 기록할 때의 조건입니다. 가까워질 때는 가장 높았던 f′, 멀어질 때는 가장 낮았던 f′를 기록합니다. 같은 속력으로 (가)와 (나)를 채워 비교해 보세요.';
 }
 
 const ROWS = [['src','(가) 음원 이동'], ['obs','(나) 관찰자 이동'], ['both','(다) 둘 다 이동']];
@@ -498,13 +495,11 @@ function record(S){
 // 노래: 재생 속도를 f′/f배로 바꿔(음높이 보정 끔) 모든 진동수 성분을 같은 비율로 옮긴다.
 // 소리 크기: 거리에 반비례(가장 가까울 때 최대).
 let ac, osc, gain, soundOn = false;
-let sndMode = 'song', songSrc = 'builtin';   // builtin | media | yt
+let songSrc = 'builtin';   // builtin | media | yt
 let media = null, ytP = null;
-const MEL = [523,659,784,659, 880,784,659,0, 698,880,1047,880, 784,659,587,0,
-             523,659,784,1047, 988,784,659,0, 698,784,880,698, 659,587,523,0];   // 기본 멜로디(Hz), 8분음표
 
 function updateSound(S){
-  const fp = S.fp, on = soundOn && running, ratio = fp/P.f, song = sndMode === 'song';
+  const fp = S.fp, on = soundOn && running, ratio = S.ratio, song = sndMode === 'song';
   const loud = clamp(DOFF/S.R, 0.2, 1);
   if (media){
     if (on && song && songSrc === 'media'){
@@ -543,7 +538,8 @@ $('sound').onclick = () => {
 const songInfo = msg => { $('songInfo').textContent = msg; };
 function useBuiltin(){
   songSrc = 'builtin'; $('ytBox').style.display = 'none';
-  songInfo('지금 노래: 기본 멜로디. 파일이나 링크를 넣으면 그 노래로 바뀝니다.');
+  songInfo(fMode === 'live' ? '기본 멜로디의 음이 바뀔 때마다 음원 진동수가 실시간으로 표시됩니다.'
+                            : '지금 노래: 기본 멜로디. 파일이나 링크를 넣으면 그 노래로 바뀝니다.');
 }
 function setMedia(url, name){
   if (media) media.pause();
@@ -574,24 +570,37 @@ $('songGo').onclick = () => {
 };
 $('songDef').onclick = useBuiltin;
 
+// 실시간 인식에서는 진동수를 정확히 알 수 있는 기본 멜로디와 순음만 쓴다(첨부 파일·링크는 숨김).
+function syncMode(){
+  const lv = fMode === 'live';
+  if (lv){ if (media) media.pause(); useBuiltin(); }
+  else if (songSrc === 'builtin') useBuiltin();
+  $('songExtra').style.display = lv ? 'none' : '';
+  $('snd').firstElementChild.textContent = lv ? '🎵 기본 멜로디' : '🎵 노래';
+  $('fRow').classList.toggle('off', live()); $('fR').disabled = $('fN').disabled = live();
+  $('modeNote').textContent = lv
+    ? '음원이 지금 내고 있는 음의 진동수를 실시간으로 나타냅니다. 기본 멜로디와 순음만 사용합니다.'
+    : '음원 진동수 f를 하나로 정해 두고 탐구합니다. 노래에는 여러 음이 있지만 f 하나로 대표해서 나타냅니다.';
+}
+
 // ── 반복 ──────────────────────────────────────────────
 function tick(now){
   const dt = Math.min(0.05, (now - last)/1000 || 0); last = now;
   if (running){ t += dt*rate; if (t >= TEND){ t = TEND; running = false; syncPlay(); } }
-  const S = stateAt(t), ratio = S.fp/P.f, K = SCENE_W/VIEW;
+  const S = stateAt(t), K = SCENE_W/VIEW, fS = srcF();
   if (running){
-    record(S);
-    beatS += dt*2; beatO += dt*2*clamp(ratio, 0.3, 3);   // 관찰자는 들리는 빠르기에 맞춰 리듬을 탄다
-    songPos += dt*ratio; scroll += dt*0.25;
+    if (live()) hist.push({t, f: fS, fp: fS*S.ratio}); else record(S);
+    beatS += dt*2; beatO += dt*2*clamp(S.ratio, 0.3, 3);   // 관찰자는 들리는 빠르기에 맞춰 리듬을 탄다
+    songPos += dt*S.ratio; scroll += dt*0.25;
   }
   if (window.scene3d) scene3d.update({xs: S.xs*K, xo: S.xo*K, us, uo, zo: OBS_Z, dir, beatS, beatO, running, dt,
                                       rollS: Math.abs(us)*t*K, rollO: uo*t*K});
-  drawWave(S); drawPitch(S); drawGraph(S); drawReadouts(S); updateSound(S);
+  drawWave(S); drawPitch(S, fS); drawGraph(S); drawNotes(S); updateSound(S);
   requestAnimationFrame(tick);
 }
 function syncPlay(){ $('play').textContent = running ? '❚❚ 일시 정지' : (t >= TEND ? '▶ 다시 재생' : '▶ 재생'); }
-$('play').onclick = () => { if (t >= TEND) t = 0; running = !running; syncPlay(); };
-$('reset').onclick = () => { t = 0; running = false; songPos = 0; if (media) media.currentTime = 0; syncPlay(); };
+$('play').onclick = () => { if (t >= TEND){ t = 0; hist.length = 0; } running = !running; syncPlay(); };
+$('reset').onclick = () => { t = 0; hist.length = 0; running = false; songPos = 0; if (media) media.currentTime = 0; syncPlay(); };
 $('clear').onclick = () => { for (const k in rec) delete rec[k]; drawTable(); };
 
 // ── 입력 연결 ─────────────────────────────────────────
@@ -619,10 +628,13 @@ function syncTarget(){
   $('vsRow').classList.toggle('off', target === 'obs'); $('vsR').disabled = $('vsN').disabled = target === 'obs';
   $('voRow').classList.toggle('off', target === 'src'); $('voR').disabled = $('voN').disabled = target === 'src';
 }
+function showTab(v){ tab = v; for (const k of ['pitch','graph','table']) $('p-' + k).classList.toggle('on', k === v); }
 seg('target', () => target, v => { target = v; syncTarget(); setup(); });
 seg('dir',    () => dir,    v => { dir = v; setup(); });
 seg('rate',   () => rate,   v => { rate = +v; setCrest(); });
-seg('snd',    () => sndMode, v => { sndMode = v; });
+seg('fmode',  () => fMode,  v => { fMode = v; syncMode(); setup(); });
+seg('snd',    () => sndMode, v => { sndMode = v; syncMode(); setup(); });
+seg('tab',    () => tab,    showTab);
 $('presets').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   P.vs = P.vo = +b.dataset.v;
@@ -630,7 +642,7 @@ $('presets').onclick = e => {
   setup();
 };
 
-syncTarget(); setup(); drawTable(); syncPlay(); useBuiltin();
+syncTarget(); syncMode(); showTab(tab); setup(); drawTable(); syncPlay();
 requestAnimationFrame(tick);
 </script>
 
@@ -736,9 +748,8 @@ function setObserver(gltf){
 const isCar = gltf => !!gltf.scene.getObjectByName('WheelSet_Front');
 const loader = new GLTFLoader();
 const help = document.getElementById('modelHelp');
-// 인터넷에서 모델 자동으로 불러오기: 두 .glb 파일을 올려 둔 폴더 주소를 적으세요.
-// 예) 'https://cdn.jsdelivr.net/gh/깃허브아이디/저장소이름@main/'
-const MODEL_BASE = '';
+// 인터넷에서 모델 자동으로 불러오기: 두 .glb 파일을 올려 둔 폴더 주소
+const MODEL_BASE = 'https://parknayon2005-png.github.io/doppler-sim/';
 function loadModel(name, done){   // 같은 폴더 → MODEL_BASE 순서로 시도, 모두 실패하면 직접 선택 안내
   const urls = [name].concat(MODEL_BASE ? [MODEL_BASE.replace(/\/?$/, '/') + name] : []);
   const next = i => i < urls.length ? loader.load(urls[i], done, undefined, () => next(i + 1)) : (help.style.display = 'block');
@@ -746,7 +757,7 @@ function loadModel(name, done){   // 같은 폴더 → MODEL_BASE 순서로 시�
 }
 loadModel('chiikawa_car.glb', setCar);
 loadModel('usagi.glb', setObserver);
-// 서버 없이 열었을 때: 파일을 직접 골라서 불러오기
+// 모델을 불러오지 못했을 때: 파일을 직접 골라서 불러오기
 async function loadFiles(files){
   for (const f of files){
     if (!/\.glb$/i.test(f.name)) continue;
